@@ -1,10 +1,13 @@
 # Script for mysql backup
 
 ```
+$ mkdir config/
+$ cd config/
+$ touch backup.json
+$ touch restore.cnf
+$ touch <label>.cnf
 $ ./backup.py
 ```
-
-## Add a config/ folder with the following files
 
 ### backup.json
 ```json
@@ -32,7 +35,7 @@ $ ./backup.py
  
 ```
 [client]
-user = xxxxx
-password = xxxxxx
-host = xxx.xxx.xxx.xxx
+user=xxxxx
+password=xxxxxx
+host=xxx.xxx.xxx.xxx
 ```
