@@ -1,34 +1,22 @@
 #!/usr/bin/env python
+
+import lib
 import json
-import sys 
 import os 
 from datetime import datetime
 
 x = {
-    'dir': os.path.dirname(os.path.realpath(__file__))+'/config/',
     'source': 'filedump.json',
     'tmp': '/tmp/filedump/',
     'ext': '.tar.gz',
-    'mode': sys.argv[1] if len(sys.argv) > 1 else "",
-    'file': sys.argv[2] if len(sys.argv) > 2 else ""
+    'mode': lib.getArg(1),
+    'file': lib.getArg(2)
 }
 
-def error(msg):
-    print "Error: "+msg
-    quit()
-
-def loadConfig():
-    path = x['dir']+x['source']
-    
-    with open(path) as filePtr:    
-        obj = json.load(filePtr)
-
-    return obj
-
-print "***** filedump.py "+x['mode']+" ******"
+lib.printInfo()
 
 if x['mode'] == "--dump":
-    obj = loadConfig()
+    obj = lib.loadConfig(x['source'])
 
     os.system('rm -rf '+x['tmp']+obj['label'])
     os.system('mkdir -p '+x['tmp']+obj['label'])
@@ -66,13 +54,13 @@ if x['mode'] == "--dump":
     print "Finish all routines!"
 
 elif x['mode'] == "--restore":
-    obj = loadConfig()
+    obj = lib.loadConfig(x['source'])
     
     files = os.popen("ls "+obj['target']+'/'+obj['label']+'*'+x['ext']).read().split("\n")
     files.pop()
 
     if not len(files):
-         error("no files to restore!")
+         lib.error("no files to restore!")
     
     i = 1
     for file in files:
@@ -83,7 +71,7 @@ elif x['mode'] == "--restore":
     
     i = int(option)
     if not i or i < 1 or i > len(files):
-        error("unknown choice!")
+        lib.error("unknown choice!")
 
     file = files[i - 1]
     print "****** Extracting ******"
@@ -121,18 +109,12 @@ elif x['mode'] == "--config":
             "string: /path/of/another/file/or/dir/to/backup"
         ]
     }
-
-    file = x['dir']+x['source']
-    if os.path.isfile(file):
-        error("File <"+file+"> already exists!")
-
-    os.system("mkdir -p "+x['dir'])
-    with open(file, 'w') as filePtr:    
-        print >> filePtr, json.dumps(obj, indent = 4)
-        print "Please change for your needs the file <"+file+">!"
+    lib.storeConfig(x['source'], obj)
 
 else:
     print "Script for dump files!"
-    print "--dump: dump files"
-    print "--restore: restore files"
-    print "--config: configure script"
+    print ""
+    print "Usage"
+    print "$ ./filedump.py --dump: dump files"
+    print "$ ./filedump.py --restore: restore files"
+    print "$ ./filedump.py --config: configure script"

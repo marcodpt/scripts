@@ -1,41 +1,25 @@
-# Script for mysql backup
+# Some useful python scripts for unix os
+ - Simple run any of these scripts and follow instructions
+ - Config files in json
 
-```
-$ mkdir config/
-$ cd config/
-$ touch backup.json
-$ touch restore.cnf
-$ touch <label>.cnf
-$ ./backup.py
-```
+### mysqldump.py
+ - Mysql dump script
+ - Compress files
+ - Encrypt dumps with same password
+ - Multiple hosts dumps
+ - Automatic restore
 
-### backup.json
-```json
-[
-    {
-        "grants": "boolean: dump grants?", 
-        "encrypt": "boolean: encrypt with same password?", 
-        "databases": [
-            "string: database name to dump"
-        ], 
-        "folders": [{
-            "path": "string: folder path to store backup",
-            "limit": "integer: limit of backup files in this folder, 0 no limit"
-        }],
-        "exec": [
-           "string: execute after file is ready use: $file to refer to backup file" 
-        ], 
-        "label": "string: label that will be used in file name and in .cnf file",
-    }
-]
-```
+### filedump.py
+ - Create a compressed file with user defined files
+ - Restore files on a compressed file to defined locations
 
-### mysql .cnf file
- - Use the same label of backup.json
- 
-```
-[client]
-user=xxxxx
-password=xxxxxx
-host=xxx.xxx.xxx.xxx
-```
+### ssh.py
+ - Automatic open ssh connection on defined hosts
+ - Automatic find dynamic ip address based on mac address and ip range
+
+### iptables.py
+ - Allow only lan access
+ - Restore iptable rules
+
+### dbus.py
+ - Store dbus session address inside file ~/.Xdbus

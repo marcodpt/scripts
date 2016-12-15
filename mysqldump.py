@@ -1,31 +1,30 @@
 #!/usr/bin/env python
+
+import lib 
 import json
-import sys 
 import os 
+import getpass
 from datetime import datetime
 
 x = {
-    'dir': os.path.dirname(os.path.realpath(__file__))+'/config/',
-    'source': 'backup.json',
-    'ext': '.cnf',
-    'tmp': '/tmp/script_backup',
+    'source': 'mysqldump.json',
+    'dump': '.dump/',
+    'restore': '.restore',
+    'tmp': '/tmp/mysqldump',
     'algorithm': 'aes-256-cbc',
-    'mode': sys.argv[1] if len(sys.argv) > 1 else "",
-    'file': sys.argv[2] if len(sys.argv) > 2 else ""
+    'mode': lib.getArg(1),
+    'file': lib.getArg(2)
 }
 
-def error(msg):
-    print "Error: "+msg
-    quit()
-
-def loadConfig():
-    path = x['dir']+x['source']
-    
-    with open(path) as filePtr:    
-        dumps = json.load(filePtr)
+def load():
+    dumps = lib.loadConfig(x['source'])
 
     for dump in dumps:
-        path = x['dir']+dump['label']+x['ext']
+        path = x['dump']+dump['label']
+
+        if not os.path.isfile(path):
+            lib.error("Unable to locate file <"+path+">, please run:\n./mysqldump.py --config-dump")
+    
         with open(path) as filePtr:    
             lines = filePtr.readlines()
         for line in lines:
@@ -35,10 +34,10 @@ def loadConfig():
         
     return dumps
 
-print "***** backup "+x['mode']+" ******"
+lib.printInfo()
 
 if x['mode'] == "--dump":
-    dumps = loadConfig()
+    dumps = load()
 
     os.system('rm -rf '+x['tmp'])
     os.system('mkdir -p '+x['tmp'])
@@ -52,7 +51,7 @@ if x['mode'] == "--dump":
         file = dump['label']+iso
         path = x['tmp']+"/"+file
         
-        flags = '--defaults-extra-file='+x['dir']+dump['label']+x['ext']
+        flags = '--defaults-extra-file='+x['dump']+dump['label']
 
         print "Host: "+dump['label']
         os.system('mkdir -p '+path)
@@ -110,11 +109,11 @@ if x['mode'] == "--dump":
 
 elif x['mode'] == "--extract":
     if not x['file']:
-        error("You must pass a file as argument!")
+        lib.error("You must pass a file as argument!")
     if not os.path.isfile(x['file']):
-        error("File <"+x['file']+"> not found!")
+        lib.error("File <"+x['file']+"> not found!")
 
-    dumps = loadConfig()
+    dumps = load()
 
     os.system('rm -rf '+x['tmp'])
     os.system('mkdir -p '+x['tmp'])
@@ -148,14 +147,14 @@ elif x['mode'] == "--extract":
     print "Please checkout "+x['tmp']+"/"+file
 
 elif x['mode'] == "--restore":
+    if not os.path.isfile(x['restore']):
+        lib.error("No restore information!Please run:\n./mysqldump.py --config-restore")
     if not x['file']:
-        error("You must pass a directory as argument!")
+        lib.error("You must pass a directory as argument!")
     if not os.path.isdir(x['file']):
-        error("Directory <"+x['file']+"> not found!")
+        lib.error("Directory <"+x['file']+"> not found!")
 
-    dumps = loadConfig()
-
-    flags = '--defaults-extra-file='+x['dir']+'restore'+x['ext']
+    flags = '--defaults-extra-file='+os.path.dirname(os.path.realpath(__file__))+'/'+x['restore']
 
     db = os.popen("mysql "+flags+" -BNe 'SHOW DATABASES'").read()
     db = db[0:len(db) - 1]
@@ -178,8 +177,76 @@ elif x['mode'] == "--restore":
                 os.system("mysql "+flags+" -BNe 'CREATE DATABASE "+db+"'")
                 os.system("mysql "+flags+" "+db+" < "+file)
 
+elif x['mode'] == "--config":
+    obj = [
+        {
+            "label": "string: dump label",
+            "host": "string: host ip address",
+            "user": "string: user name",
+            "grants": "boolean: dump grants?", 
+            "encrypt": "boolean: encrypt with same password?", 
+            "databases": [
+                "string: database name to dump"
+            ], 
+            "folders": [
+                {
+                    "path": "string: path to save dump",
+                    "limit": "integer: max number of dump files in this folder, 0 for unlimited"
+                }
+            ],
+            "exec": [
+                "string: bash command to execute after dump use $file to refer to dump file" 
+            ]
+        }
+    ]
+    lib.storeConfig(x['source'], obj)
+    print "After edit <"+x['source']+">, please run: "
+    print "$ ./mysqldump.py --config-dump"
+
+elif x['mode'] == "--config-dump":
+    dumps = lib.loadConfig(x['source'])
+
+    os.system('rm -rf '+x['dump'])
+    os.system('mkdir '+x['dump'])
+
+    for dump in dumps:
+        path = x['dump']+dump['label']
+        os.system('touch '+path)
+        os.system('chmod go-rw '+path)
+        
+        password = getpass.getpass("password for <"+dump['label']+">: ") 
+
+        with open(path, 'w') as filePtr:    
+            print >> filePtr, "[client]"
+            print >> filePtr, "user="+dump['user']
+            print >> filePtr, "password="+password
+            print >> filePtr, "host="+dump['host']
+
+elif x['mode'] == "--config-restore":
+    os.system('rm -f '+x['restore'])
+    os.system('touch '+x['restore'])
+    os.system('chmod go-rw '+x['restore'])
+
+    host = raw_input("Host: ")
+    user = raw_input("User: ")
+    password = getpass.getpass("Password: ") 
+        
+    with open(x['restore'], 'w') as filePtr:    
+        print >> filePtr, "[client]"
+        print >> filePtr, "user="+user
+        print >> filePtr, "password="+password
+        print >> filePtr, "host="+host
+
 else:
     print "Script for mysql backup and encrypt!"
-    print "--dump: dump databases"
-    print "--extract <filename>: extract backup file"
-    print "--restore <foldername>: restore .sql files"
+    print "Install"
+    print "mysql for dumps and restore"
+    print "openssl for encrypt"
+    print ""
+    print "Usage"
+    print "$ ./mysqldump.py --config: create file <"+x['source']+">"
+    print "$ ./mysqldump.py --config-dump: save db passwords"
+    print "$ ./mysqldump.py --config-restore: save restore password"
+    print "$ ./mysqldump.py --dump: dump databases"
+    print "$ ./mysqldump.py --extract <filename>: extract backup file"
+    print "$ ./mysqldump.py --restore <foldername>: restore .sql files"
