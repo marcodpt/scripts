@@ -18,6 +18,7 @@ x = {
 
 def load():
     dumps = lib.loadConfig(x['source'])
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
     for dump in dumps:
         path = x['dump']+dump['label']
