@@ -8,8 +8,8 @@ from datetime import datetime
 
 x = {
     'source': 'mysqldump.json',
-    'dump': '.dump/',
-    'restore': '.restore',
+    'dump': os.path.dirname(os.path.realpath(__file__))+'/.dump/',
+    'restore': os.path.dirname(os.path.realpath(__file__))+'/.restore',
     'tmp': '/tmp/mysqldump',
     'algorithm': 'aes-256-cbc',
     'mode': lib.getArg(1),
@@ -18,7 +18,6 @@ x = {
 
 def load():
     dumps = lib.loadConfig(x['source'])
-    os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
     for dump in dumps:
         path = x['dump']+dump['label']
