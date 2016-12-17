@@ -17,6 +17,10 @@
  - Automatic open ssh connection on defined hosts
  - Automatic find dynamic ip address based on mac address and ip range
 
+### pass.py
+ - Generate random passwords
+ - Define what characters include in your password
+
 ### iptables.py
  - Allow only lan access
  - Restore iptable rules
