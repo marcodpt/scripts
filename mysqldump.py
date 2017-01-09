@@ -154,7 +154,7 @@ elif x['mode'] == "--restore":
     if not os.path.isdir(x['file']):
         lib.error("Directory <"+x['file']+"> not found!")
 
-    flags = '--defaults-extra-file='+os.path.dirname(os.path.realpath(__file__))+'/'+x['restore']
+    flags = '--defaults-extra-file='+x['restore']
 
     db = os.popen("mysql "+flags+" -BNe 'SHOW DATABASES'").read()
     db = db[0:len(db) - 1]
