@@ -21,7 +21,7 @@ if x['mode'] == "--sync":
         elif (not os.path.isdir(repo['dir'])) or (not os.path.isdir(os.path.join(repo['dir'], '.git'))):
             lib.warning(repo['dir']+': is not a git repo! skiping!')
         else:
-            os.system('cd '+repo['dir']+' && git push && git pull')
+            os.system('cd '+repo['dir']+' && git pull && git push')
 
 elif x['mode'] == "--config":
     repos = [
@@ -44,4 +44,4 @@ else:
     print ""
     print "Usage"
     print "$ ./git.py --config: generate <"+x['source']+">"
-    print "$ ./git.py --sync: push and pull or clone git repos as defined in <"+x['source']+">"
+    print "$ ./git.py --sync: pull and push or clone git repos as defined in <"+x['source']+">"
