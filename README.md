@@ -10,6 +10,9 @@
  - Multiple hosts dumps
  - Automatic restore
 
+### git.py
+ - pull and push or clone all your git repos in your local machine
+
 ### ssh.py
  - Automatic open ssh connection on defined hosts
  - Automatic find dynamic ip address based on mac address and ip range

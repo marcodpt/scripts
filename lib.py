@@ -6,6 +6,9 @@ x = {
     'config': os.path.dirname(os.path.realpath(__file__))+'/config/'
 }
 
+def warning(msg):
+    print "Warning: "+msg
+
 def error(msg):
     print "Error: "+msg
     quit()

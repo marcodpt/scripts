@@ -1,5 +1,3 @@
 config
 *.swp
 *.pyc
-.dump
-.restore
