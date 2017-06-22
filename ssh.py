@@ -6,6 +6,9 @@ import os
 x = {
     'source': 'ssh.json',
     'host': lib.getArg(1),
+    'action': lib.getArg(2),
+    'src': lib.getArg(3),
+    'dest': lib.getArg(4),
     'cache': []
 }
 
@@ -74,7 +77,18 @@ elif x['host']:
     if host['ip'].find("-") != -1:
         flags = ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
-    os.system("ssh "+host['user']+"@"+ipAddress+" -p "+host['port']+flags)
+    if x['action'] == 'put':
+        if not x['dest']:
+            x['dest'] = '.'
+        os.system("scp -r -P "+host['port']+' '+x['src']+' '+host['user']+"@"+ipAddress+':'+x['dest'])
+
+    elif x['action'] == 'get':
+        if not x['dest']:
+            x['dest'] = '.'
+        os.system("scp -r -P "+host['port']+' '+host['user']+"@"+ipAddress+':'+x['src']+' '+x['dest'])
+
+    else:
+        os.system("ssh "+host['user']+"@"+ipAddress+" -p "+host['port']+flags)
 
 else:
     print "Script for ssh connection"
@@ -88,3 +102,5 @@ else:
     print "$ ./ssh.py --config: generate <"+x['source']+">"
     print "$ ./ssh.py --list: list availble hosts"
     print "$ ./ssh.py <host>: ssh connect to host"
+    print "$ ./ssh.py <host> get <source> <dest>: use scp to get a file from external host"
+    print "$ ./ssh.py <host> put <source> <dest>: use scp to put a file to external host"
