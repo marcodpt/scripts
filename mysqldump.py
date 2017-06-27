@@ -14,6 +14,19 @@ x = {
     'file': lib.getArg(2)
 }
 
+def mysqlPass(host, user, password):
+    fileStr = "[client]\n"
+    fileStr += "user="+user+"\n"
+    fileStr += "password="+password+"\n"
+    fileStr += "host="+host
+
+    filePath = "/tmp/.mysql"
+
+    with open(filePath,'w') as f:
+        f.write(fileStr)
+
+    return filePath
+
 lib.printInfo()
 
 if x['mode'] == "--dump":
@@ -28,35 +41,33 @@ if x['mode'] == "--dump":
     print iso
 
     for dump in dumps:
+        print "Host: "+dump['label']
+
         file = dump['label']+iso
         path = x['tmp']+"/"+file
-        
-        flags = ' -h "'+dump['host']+'"'
-        flags += ' -u "'+dump['user']+'"'
-        flags += ' -p'+dump['pass']
-
-        print "Host: "+dump['label']
         os.system('mkdir -p '+path)
+        secret = mysqlPass(dump['host'], dump['user'], dump['pass'])
+        flags = '--defaults-extra-file='+secret
 
-        if dump['grants']:
+        for grant in dump['grants']:
             print "***** Dumping Grants *****"
-            str = "mysql "+flags+" -BNe"
-            str += " \"select concat('\\'',user,'\\'@\\'',host,'\\'') from mysql.user where user != 'root'\""
-            str += " | while read uh;"
-            str += " do mysql "+flags+" -BNe"
-            str += " \"show grants for $uh\""
-            str += " | sed 's/$/;/; s/\\\\\\\\/\\\\/g';"
-            str += " done > "+path+"/grants.sql"
+            os.system("mysql "+flags+" -e 'show grants for "+grant+"' >> "+path+"/grants.sql")
 
-            os.system(str)
+        if os.path.isfile(path+"/grants.sql"):
+            os.system("sed -i '/Grants for/d' "+path+"/grants.sql")
+            os.system("sed 's/$/;/' "+path+"/grants.sql > "+path+"/grants2.sql")
+            os.system("mv -f "+path+"/grants2.sql "+path+"/grants.sql")
         
         flags += ' --force'
         flags += ' --opt'
         flags += ' --databases'
+        flags += ' --routines'
 
         for db in dump['databases']:
             print "***** Dumping "+db+" *****"
             os.system('mysqldump '+flags+' '+db+' > '+path+"/"+db+'.sql')
+
+        os.system('rm '+secret)
 
         print "***** Compressing *****"
         os.chdir(x['tmp'])
@@ -69,11 +80,12 @@ if x['mode'] == "--dump":
             os.system('openssl '+x['algorithm']+' -salt -in '+file+' -out '+file+'.enc -k '+dump['pass'])
             os.system('rm -rf '+file)
             file += '.enc'
-        
 
         print "****** Moving File ******"
         for folder in dump['folders']:
-            os.system('mkdir -p '+folder['path'])
+            if not os.path.isdir(folder['path']):
+                print "<"+folder['path']+"> does not exists, skipping!"
+                continue
             os.system('cp '+x['tmp']+'/'+file+' '+folder['path'])
             if folder['limit']:
                 files = os.popen("ls "+folder['path']+'/'+dump['label']+'*').read().split("\n")
@@ -135,10 +147,9 @@ elif x['mode'] == "--restore":
         lib.error("Directory <"+x['file']+"> not found!")
 
     restore = lib.loadConfig(x['source'])['restore']
-
-    flags = ' -h "'+restore['host']+'"'
-    flags += ' -u "'+restore['user']+'"'
-    flags += ' -p'+restore['pass']
+    os.system('mkdir -p '+x['tmp'])
+    secret = mysqlPass(restore['host'], restore['user'], restore['pass'])
+    flags = '--defaults-extra-file='+secret
 
     db = os.popen("mysql "+flags+" -BNe 'SHOW DATABASES'").read()
     db = db[0:len(db) - 1]
@@ -146,12 +157,13 @@ elif x['mode'] == "--restore":
 
     os.chdir(x['file'])
     ext = ".sql"
+    grants = False
     files = os.popen("ls *"+ext).read().split("\n")
     files.pop()
     for file in files:
         db = file[0:len(file) - len(ext)]
         if db == "grants":
-            print "grants: Should be restore manualy!"
+            grants = True
         else:
             try:
                 D.index(db)
@@ -160,6 +172,12 @@ elif x['mode'] == "--restore":
                 print "***** Restoring "+db+" *****"
                 os.system("mysql "+flags+" -BNe 'CREATE DATABASE "+db+"'")
                 os.system("mysql "+flags+" "+db+" < "+file)
+
+    if grants:
+        print "***** Restoring Grants *****"
+        os.system("mysql "+flags+" "+db+" < grants.sql")
+
+    os.system('rm '+secret)
 
 elif x['mode'] == "--config":
     obj = {
@@ -174,7 +192,10 @@ elif x['mode'] == "--config":
                 "host": "string: host ip address",
                 "user": "string: user name",
                 "pass": "string: user password",
-                "grants": "boolean: dump grants?", 
+                "grants": [
+                    "string: user name",
+                    "string: 'user'@'host'"
+                ], 
                 "encrypt": "boolean: encrypt with same password?", 
                 "databases": [
                     "string: database name to dump"
