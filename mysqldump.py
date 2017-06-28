@@ -55,6 +55,7 @@ if x['mode'] == "--dump":
 
         if os.path.isfile(path+"/grants.sql"):
             os.system("sed -i '/Grants for/d' "+path+"/grants.sql")
+            os.system("sed -i 's|PASSWORD <secret>|\""+dump['pass']+"\"|' "+path+"/grants.sql")
             os.system("sed 's/$/;/' "+path+"/grants.sql > "+path+"/grants2.sql")
             os.system("mv -f "+path+"/grants2.sql "+path+"/grants.sql")
         
