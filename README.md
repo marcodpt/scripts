@@ -13,7 +13,3 @@
 ### ssh.py
  - Automatic open ssh connection on defined hosts
  - Automatic find dynamic ip address based on mac address and ip range
-
-### iptables.py
- - Allow only lan access
- - Restore iptable rules
