@@ -1,3 +1,6 @@
+# install 
+apt install mysql-client
+
 # Some useful python scripts for unix os
  - Simple run any of these scripts and follow instructions
  - Config files in json
