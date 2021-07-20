@@ -65,6 +65,7 @@ if x['mode'] == "--dump":
         flags += ' --routines'
         flags += ' --set-gtid-purged=OFF'
         flags += ' --max_allowed_packet=512M'
+        flags += ' --column-statistics=0'
 
         for db in dump['databases']:
             print "***** Dumping "+db+" *****"
